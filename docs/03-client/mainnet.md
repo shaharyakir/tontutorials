@@ -100,18 +100,6 @@ Run `npm run dev` and open your web app. You should be able to connect at this p
 
 Now we'll interact with the counter contract. First, Add to your project the `Counter` class from the previous tutorial.
 
-In App.tsx, Add the OpenedContract type (TEMP - see this [PR](https://github.com/ton-community/ton-core/pull/6))
-
-```
-type OpenedContract<F> = {
-  [P in keyof F]: P extends `${"get" | "send"}${string}`
-    ? F[P] extends (x: ContractProvider, ...args: infer P) => infer R
-      ? (...args: P) => R
-      : never
-    : F[P];
-};
-```
-
 Add the following react hooks:
 
 useAsyncInitialize - Will help us initialize dependencies

@@ -69,15 +69,6 @@ function App() {
 <p>Run <code>npm run dev</code> and open your web app. You should be able to connect at this point with your wallet and view your address within the webapp.</p>
 <h2 id="step6interactwiththecountercontract">Step 6 - Interact with the Counter contract</h2>
 <p>Now we'll interact with the counter contract. First, Add to your project the <code>Counter</code> class from the previous tutorial.</p>
-<p>In App.tsx, Add the OpenedContract type (TEMP - see this <a href="https://github.com/ton-community/ton-core/pull/6">PR</a>)</p>
-<pre><code>type OpenedContract<F> = {
-  [P in keyof F]: P extends `${"get" | "send"}${string}`
-    ? F[P] extends (x: ContractProvider, ...args: infer P) => infer R
-      ? (...args: P) => R
-      : never
-    : F[P];
-};
-</code></pre>
 <p>Add the following react hooks:</p>
 <p>useAsyncInitialize - Will help us initialize dependencies</p>
 <pre><code>function useAsyncInitialize<T>(func: () => Promise<T>, deps: any[] = []) {
