@@ -1,17 +1,9 @@
 # Building your first web client
 
-## Step 1 - Create a React project
-Create the project using vite (a quick way of jumpstarting react)
+In this tutorial, we will build a simple web app to interact with the Counter contract we've just deployed.
+We'll also configure it as a [Telegram Web App](https://core.telegram.org/bots/webapps).
 
-```
-npm create vite@latest my-twa -- --template react-ts
-cd my-twa
-npm install
-npm install ton ton-crypto ton-core
-npm install @orbs-network/ton-access
-```
-
-## Step 2 - Install Tonkeeper 
+## Step 1 - Install Tonkeeper 
 Install Tonkeeper on your mobile device. Go to https://tonkeeper.com/
 
 ---
@@ -25,6 +17,17 @@ Switch tonkeeper to testnet:
 ```
 
 ---
+
+## Step 2 - Create a React project
+Create the project using [vite](https://vitejs.dev/) (a quick way of jumpstarting react)
+
+```
+npm create vite@latest my-twa -- --template react-ts
+cd my-twa
+npm install
+npm install ton ton-crypto ton-core
+npm install @orbs-network/ton-access
+```
 
 ## Step 3 - Add node.js polyfills
 We need to polyfill node.js `Buffer` in order to work with TON in the browser. 
@@ -48,12 +51,10 @@ export default defineConfig({
 });
 ```
 
-// TODO (tonweb?)
-
 ## Step 4 - Set up TON Connect
 TON Connect is the dapp library to enable wallet interaction
 
-Install ton connect UI. It's still in beta, but it will handle all wallet interaction for us:
+Install TON Connect UI. It's still in beta, but it will handle all wallet interaction for us:
 
 * Getting the list of Ton-Connect2 supported wallets
 
@@ -109,7 +110,8 @@ Run `npm run dev` and open your web app. You should be able to connect at this p
 
 ## Step 6 - Interact with the Counter contract
 
-Now we'll interact with the counter contract. Add to your project the `Counter` class from the previous tutorial.
+Now we'll interact with the counter contract. First, Add to your project the `Counter` class from the previous tutorial.
+
 In App.tsx, Add the OpenedContract type (TEMP - see this [PR](https://github.com/ton-community/ton-core/pull/6))
 
 ```
@@ -354,7 +356,12 @@ First, delete content of your index.css file. Then, replace the contents of your
 }
 ```
 
-## Step 8 - Add the Telegram Web App SDK
+## Step 8 - Increment the counter from your app
+You should now have a working webapp. Run it with `npm run dev`, then connect your wallet with Tonkeeper.
+
+After connecting, increment the counter and watch its value change.
+
+## Step 9 - Add the Telegram Web App SDK
 
 Add the Telegram Web App SDK, so we can get theming properties from Telegram.
 In your index.html file, under the <head> tag, add:
@@ -364,6 +371,23 @@ In your index.html file, under the <head> tag, add:
 ```
 
 Create a Telegram bot.
-* Go to botfather and create a bot
-* Using ngrok(?), set the menu button URL
-* Open within telegram
+
+* Go to [botfather](https://t.me/botfather) and create a bot
+
+* Expose your web app using ngrok (TODO - ?)
+
+* Set the menu button URL:
+  
+  * In Telegram's chat with botfather, type /mybots
+  
+  * Select your bot
+
+  * Select 'Bot Settings'
+
+  * Select 'Menu Button'
+
+  * Select 'Edit Menu Button URL'
+
+  * Type your ngrok URL
+
+* Open your webapp within telegram and launch it
