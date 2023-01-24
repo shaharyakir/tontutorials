@@ -4,14 +4,13 @@ In this tutorial, we will build a simple web app to interact with the Counter co
 We'll also configure it as a [Telegram Web App](https://core.telegram.org/bots/webapps).
 
 ## Step 1 - Install Tonkeeper 
-Install Tonkeeper on your mobile device. Go to https://tonkeeper.com/
+Install Tonkeeper on your mobile device. Download it from [https://tonkeeper.com/](https://tonkeeper.com/)
 
 Switch tonkeeper to testnet:
-```
-* go to ...
-* tap 5 times on the version
-* tap switch to testnet
-```
+* Go to Settings
+* Scroll down until you see the version
+* Tap on the version 5 times quickly
+* Tap switch to testnet
 
 ## Step 2 - Create a React project
 Create the project using [vite](https://vitejs.dev/) (a quick way of jumpstarting react)
@@ -35,7 +34,7 @@ npm install vite-plugin-node-polyfills
   
 Modify `vite.config.ts` so it looks like this: 
 
-```
+```ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
@@ -76,7 +75,7 @@ Push to github and take note of the raw URL for `tonconnect-manifest.json`. We w
 
 Modify main.tsx to instruct the TON Connect provider to consume the manifest we just uploaded:
 
-```typescript
+```jsx
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
@@ -240,7 +239,7 @@ function App() {
 ## Step 7 - Style the app
 
 First, delete content of your index.css file. Then, replace the contents of your App.css file with:
-```
+```css
 :root {
   --tg-theme-bg-color: #efeff3;
   --tg-theme-button-color: #63d0f9;
