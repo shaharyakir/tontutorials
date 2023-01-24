@@ -91,7 +91,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 
 ## Step 5 - Connect to your wallet from the webapp
 
-Replace your ```<App/>``` code
+Update your ```<App/>``` code
 ```tsx
 import { TonConnectButton } from '@tonconnect/ui-react';
 ...
@@ -114,6 +114,8 @@ Then, add the following react hooks:
 
 useAsyncInitialize - Will help us initialize dependencies
 ```ts
+import { useEffect, useState } from "react";
+
 function useAsyncInitialize<T>(func: () => Promise<T>, deps: any[] = []) {
   const [state, setState] = useState<T | undefined>();
 
@@ -130,6 +132,9 @@ function useAsyncInitialize<T>(func: () => Promise<T>, deps: any[] = []) {
 useTonClient - will help us interact with TON
 
 ```ts
+import { getHttpEndpoint } from "@orbs-network/ton-access";
+import { TonClient } from "ton";
+
 function useTonClient() {
   return useAsyncInitialize(
     async () =>
@@ -141,6 +146,9 @@ function useTonClient() {
 ```
 useTonConnect - will expose whether we are connected with the wallet, and the Sender interface which is needed to send operations via our Counter class.
 ```ts
+import { useTonConnectUI } from "@tonconnect/ui-react";
+import { Sender, SenderArguments } from "ton";
+
 function useTonConnect(): { sender: Sender; connected: boolean } {
   const [tonConnectUI] = useTonConnectUI();
 
@@ -242,11 +250,14 @@ function App() {
 
 ## Step 7 - Style the app
 
-First, delete content of your index.css file. Then, replace the contents of your App.css file with:
+First, delete content of your index.css file so that it's completely empty.
+
+Then, replace the contents of your App.css file with:
 ```css
 :root {
   --tg-theme-bg-color: #efeff3;
   --tg-theme-button-color: #63d0f9;
+  --tg-theme-button-text-color: black;
 }
 
 .App {
@@ -278,8 +289,8 @@ First, delete content of your index.css file. Then, replace the contents of your
 }
 
 .Disabled {
-  background-color: #d8d8d8;
-  color: #818181;
+  filter: brightness(50%);
+  cursor: initial;
 }
 
 .Button.Active:hover {
@@ -302,23 +313,20 @@ First, delete content of your index.css file. Then, replace the contents of your
     --tg-theme-bg-color: #131415;
     --tg-theme-text-color: #fff;
     --tg-theme-button-color: #32a6fb;
+    --tg-theme-button-text-color: #fff;
   }
 
   .Card {
-    background-color: #202e3e;
+    background-color: var(--tg-theme-bg-color);
+    filter: brightness(165%);
   }
 
   .CounterValue {
-    background-color: #282828;
     border-radius: 16px;
     color: white;
     padding: 10px;
   }
 
-  .Disabled {
-    background-color: #444;
-    color: #818181;
-  }
 }
 ```
 
@@ -336,11 +344,18 @@ Take note of your github pages URL, such as `https://my-user.github.io/my-repo`
 ## Step 10 - Add the Telegram Web App SDK
 
 Add the Telegram Web App SDK, so we can get theming properties from Telegram.
-In your index.html file, under the <head> tag, add:
 
+Run
 ```
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+npm install @twa-dev/sdk
 ```
+
+And in your App.tsx, add
+```
+import "@twa-dev/sdk";
+```
+
+## Step 11 - Connect the webapp to your bot
 
 Create a Telegram bot.
 
