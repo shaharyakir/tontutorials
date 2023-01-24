@@ -5,3 +5,5 @@ node_modules
 *.output.txt
 *.cell
 temp/
+# Local Netlify folder
+.netlify
