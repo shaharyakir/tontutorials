@@ -29,7 +29,7 @@ npm install @orbs-network/ton-access
 ```
 
 ## Step 3 - Add node.js polyfills
-We need to polyfill node.js `Buffer` in order to work with TON in the browser. 
+We need to polyfill node.js `Buffer` in order to work with the `ton` NPM package in the browser. 
 
 First, install the node.js polyfills.
 
@@ -56,17 +56,17 @@ TON Connect is the dapp library to enable wallet interaction
 Install TON Connect UI. It's still in beta, but it will handle all wallet interaction for us:
 
 * Getting the list of Ton-Connect2 supported wallets
-
 * Getting the address from the wallet
-
 * Sending a transaction through the wallet
 
 ```
 npm i @tonconnect/ui-react
 ```
 
-Now, add a `tonconnect-manifest.json` in your `public` folder with the following contents. 
-Don't worry about the broken icon for now, in your production app you will just change it to a publicly available URL of your logo.
+Now add the TON Connect manifest. This file tells the wallet details about your app when connecting with it.
+Add a `tonconnect-manifest.json` in your `public` folder with the following contents:
+
+> Don't worry about the broken icon for now, in your production app you will just change it to a publicly available URL of your logo.
 
 ```
 {
