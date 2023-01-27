@@ -115,21 +115,11 @@ export default defineConfig({
 </ul>
 <pre><code>npm i @tonconnect/ui-react
 </code></pre>
-<p>Now add the TON Connect manifest. This file tells the wallet details about your app when connecting with it.
-Add a <code>tonconnect-manifest.json</code> in your <code>public</code> folder with the following contents:</p>
-<p>Don't worry about the broken icon for now, in your production app you will just change it to a publicly available URL of your logo.</p>
-<pre><code class="json language-json">{
-  "url": "https://telegram.org",
-  "name": "My TWA",
-  "iconUrl": "https://broken.png"
-}
-</code></pre>
-<p>Push to github and take note of the raw URL for <code>tonconnect-manifest.json</code>. We will use this temporarily to enable connecting the dapp to the wallet.</p>
-<p>(Example: <a href="https://raw.githubusercontent.com/ton-community/tutorials/03-twa/03-client/tonconnect-manifest.json">https://raw.githubusercontent.com/ton-community/tutorials/03-twa/03-client/tonconnect-manifest.json</a>)</p>
-<p>Modify main.tsx to instruct the TON Connect provider to consume the manifest we just uploaded:</p>
+<p>Modify main.tsx to use TON Connect provider</p>
 <pre><code class="tsx language-tsx">import { TonConnectUIProvider } from '@tonconnect/ui-react';
 
-const manifestUrl = "&lt;GITHUB_TONCONNECT_MANIFEST_RAW_URL&gt;";
+// We use this temporarily for development purposes and will replace it later in this tutorial.
+const manifestUrl = "https://raw.githubusercontent.com/ton-community/tutorials/03-twa/03-client/tonconnect-manifest.json";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   &lt;TonConnectUIProvider manifestUrl={manifestUrl}&gt;
@@ -150,10 +140,9 @@ function App() {
 }
 </code></pre>
 <p>Run <code>npm run dev</code> and open your web app. You should be able to connect at this point with your wallet and view your address within the webapp.</p>
-<h2 id="step6interactwiththecountercontract">Step 6 - Interact with the Counter contract</h2>
-<p>Now we'll interact with the counter contract. Add to your project the <code>Counter</code> class from the previous tutorial.</p>
-<p>Then, add the following react hooks:</p>
-<p>useAsyncInitialize - Will help us initialize dependencies</p>
+<h2 id="step6readthecountervalue">Step 6 - Read the Counter value</h2>
+<p>Now we'll interact with the counter contract. Add to your project the <code>Counter</code> class from the previous tutorial, and store it under <code>src/contracts/counter.ts</code>.</p>
+<p>useAsyncInitialize - Will help us initialize dependencies. Put it under <code>src/hooks/useAsyncInitialize.ts</code>.</p>
 <pre><code class="ts language-ts">import { useEffect, useState } from "react";
 
 function useAsyncInitialize&lt;T&gt;(func: () =&gt; Promise&lt;T&gt;, deps: any[] = []) {
@@ -168,7 +157,7 @@ function useAsyncInitialize&lt;T&gt;(func: () =&gt; Promise&lt;T&gt;, deps: any[
   return state;
 }
 </code></pre>
-<p>useTonClient - will help us interact with TON</p>
+<p>useTonClient - will help us interact with TON. Put it under <code>src/hooks/useTonClient.ts</code>.</p>
 <pre><code class="ts language-ts">import { getHttpEndpoint } from "@orbs-network/ton-access";
 import { TonClient } from "ton";
 
@@ -181,7 +170,65 @@ function useTonClient() {
   );
 }
 </code></pre>
-<p>useTonConnect - will expose whether we are connected with the wallet, and the Sender interface which is needed to send operations via our Counter class.</p>
+<p>Add the useCounterContract hook, which will get the counter's value. Put it under <code>src/hooks/useCounterContract.ts</code></p>
+<pre><code class="ts language-ts">import Counter from './contracts/counter.ts';
+
+function useCounterContract() {
+  const tc = useTonClient();
+  const [val, setVal] = useState&lt;null | number&gt;();
+
+  const ctrct = useAsyncInitialize(async () =&gt; {
+    if (!tc) return;
+    const contract = new Counter(
+      Address.parse(&lt;COUNTER_CONTRACT_ADDRESS&gt;)
+    );
+    return tc.open(contract) as OpenedContract&lt;Counter&gt;;
+  }, [tc]);
+
+  useEffect(() =&gt; {
+    async function getValue() {
+      if (!ctrct) return;
+      setVal(null);
+      const val = await ctrct.getCounter();
+      setVal(Number(val));
+    }
+    getValue();
+  }, [ctrct]);
+
+  return {
+    value: val,
+    address: ctrct?.address.toString(),
+  };
+}
+</code></pre>
+<p>Update your App.tsx:</p>
+<pre><code class="tsx language-tsx">function App() {
+  const { value, address } = useCounterContract();
+  const { connected } = useTonConnect();
+
+  return (
+    &lt;div className="App"&gt;
+      &lt;div className="Container"&gt;
+        &lt;TonConnectButton /&gt;
+
+        &lt;div className="Card"&gt;
+          &lt;b&gt;Counter Address&lt;/b&gt;
+          &lt;div className="Hint"&gt;{address?.slice(0, 30) + "..."}&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div className="Card"&gt;
+          &lt;b&gt;Value&lt;/b&gt;
+          &lt;div&gt;{value ?? "Loading..."}&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<p>Run your webapp with <code>npm run dev</code>, and you should see the counter's value.
+Don't worry about styling, we will handle this later.</p>
+<h2 id="step7incrementthecounter">Step 7 - Increment the counter</h2>
+<p>add the <code>useTonConnect</code> hook, which will expose whether we are connected with the wallet, and the Sender interface which is needed to send operations via our Counter class. Put it under <code>src/hooks/useTonConnect.ts</code>.</p>
 <pre><code class="ts language-ts">import { useTonConnectUI } from "@tonconnect/ui-react";
 import { Sender, SenderArguments } from "ton";
 
@@ -208,8 +255,10 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
   };
 }
 </code></pre>
-<p>Add the useCounterContract hook, which will poll the counter value every 3 seconds and expose a function to send an increment op, using TON Connect 2, to your wallet.</p>
-<pre><code class="ts language-ts">function useCounterContract() {
+<p>Update the <code>useCounterContract</code> hook, which will poll the counter value every 3 seconds and expose a function to send an increment op, using TON Connect 2, to your wallet. The hook's content after the update should be:</p>
+<pre><code class="ts language-ts">import Counter from './contracts/counter.ts';
+
+function useCounterContract() {
   const tc = useTonClient();
   const [val, setVal] = useState&lt;null | number&gt;();
   const { sender } = useTonConnect();
@@ -245,7 +294,7 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
   };
 }
 </code></pre>
-<p>Update your App.tsx</p>
+<p>Update your App.tsx, so it will look like this:</p>
 <pre><code class="tsx language-tsx">function App() {
   const { sendIncrement, value, address } = useCounterContract();
   const { connected } = useTonConnect();
@@ -277,7 +326,7 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
   );
 }
 </code></pre>
-<h2 id="step7styletheapp">Step 7 - Style the app</h2>
+<h2 id="step8styletheapp">Step 8 - Style the app</h2>
 <p>First, delete content of your index.css file so that it's completely empty.</p>
 <p>Then, replace the contents of your App.css file with:</p>
 <pre><code class="css language-css">:root {
@@ -355,13 +404,25 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
 
 }
 </code></pre>
-<h2 id="step8incrementthecounterfromyourapp">Step 8 - Increment the counter from your app</h2>
+<h2 id="step9incrementthecounterfromyourapp">Step 9 - Increment the counter from your app</h2>
 <p>You should now have a working webapp. Run it with <code>npm run dev</code>, then connect your wallet with Tonkeeper.</p>
 <p>After connecting, increment the counter and watch its value change.</p>
-<h2 id="step9publishtogithubpages">Step 9 - Publish to Github pages</h2>
+<h2 id="step10publishtogithubpages">Step 10 - Publish to Github pages</h2>
+<p>Now add the real TON Connect manifest file. This file tells the wallet details about your app when connecting with it.
+Add a <code>tonconnect-manifest.json</code> in your <code>public</code> folder with the following contents:</p>
+<p>Don't worry about the broken icon url for now, in your production app you will just change it to a publicly available URL of your logo.</p>
+<pre><code class="json language-json">{
+  "url": "",
+  "name": "My TWA",
+  "iconUrl": ""
+}
+</code></pre>
+<p>Update main.tsx to instruct the TON Connect provider to consume the manifest from your github pages url (if running in production).</p>
+<pre><code class="tsx language-tsx">const manifestUrl = "https://myuser.github.io/my-twa/tonconnect-manifest.json";
+</code></pre>
 <p>Follow the vite publish to <a href="https://vitejs.dev/guide/static-deploy.html#github-pages">github pages tutorial</a></p>
-<p>Take note of your github pages URL, such as <code>https://my-user.github.io/my-repo</code></p>
-<h2 id="step10addthetelegramwebappsdk">Step 10 - Add the Telegram Web App SDK</h2>
+<p>Take note of your github pages URL, such as <code>https://myuser.github.io/my-twa</code></p>
+<h2 id="step11addthetelegramwebappsdk">Step 11 - Add the Telegram Web App SDK</h2>
 <p>Add the Telegram Web App SDK, so we can get theming properties from Telegram.</p>
 <p>Run</p>
 <pre><code>npm install @twa-dev/sdk
@@ -369,7 +430,7 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
 <p>And in your App.tsx, add</p>
 <pre><code>import "@twa-dev/sdk";
 </code></pre>
-<h2 id="step11connectthewebapptoyourbot">Step 11 - Connect the webapp to your bot</h2>
+<h2 id="step12connectthewebapptoyourbot">Step 12 - Connect the webapp to your bot</h2>
 <p>Create a Telegram bot.</p>
 <ul>
 <li><p>Go to <a href="https://t.me/botfather">botfather</a> and create a bot</p></li>
@@ -430,21 +491,11 @@ export default defineConfig({
 </ul>
 <pre><code>npm i @tonconnect/ui-react
 </code></pre>
-<p>Now add the TON Connect manifest. This file tells the wallet details about your app when connecting with it.
-Add a <code>tonconnect-manifest.json</code> in your <code>public</code> folder with the following contents:</p>
-<p>Don't worry about the broken icon for now, in your production app you will just change it to a publicly available URL of your logo.</p>
-<pre><code class="json language-json">{
-  "url": "https://telegram.org",
-  "name": "My TWA",
-  "iconUrl": "https://broken.png"
-}
-</code></pre>
-<p>Push to github and take note of the raw URL for <code>tonconnect-manifest.json</code>. We will use this temporarily to enable connecting the dapp to the wallet.</p>
-<p>(Example: <a href="https://raw.githubusercontent.com/ton-community/tutorials/03-twa/03-client/tonconnect-manifest.json">https://raw.githubusercontent.com/ton-community/tutorials/03-twa/03-client/tonconnect-manifest.json</a>)</p>
-<p>Modify main.tsx to instruct the TON Connect provider to consume the manifest we just uploaded:</p>
+<p>Modify main.tsx to use TON Connect provider</p>
 <pre><code class="tsx language-tsx">import { TonConnectUIProvider } from '@tonconnect/ui-react';
 
-const manifestUrl = "&lt;GITHUB_TONCONNECT_MANIFEST_RAW_URL&gt;";
+// We use this temporarily for development purposes and will replace it later in this tutorial.
+const manifestUrl = "https://raw.githubusercontent.com/ton-community/tutorials/03-twa/03-client/tonconnect-manifest.json";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   &lt;TonConnectUIProvider manifestUrl={manifestUrl}&gt;
@@ -465,10 +516,9 @@ function App() {
 }
 </code></pre>
 <p>Run <code>npm run dev</code> and open your web app. You should be able to connect at this point with your wallet and view your address within the webapp.</p>
-<h2 id="step6interactwiththecountercontract">Step 6 - Interact with the Counter contract</h2>
-<p>Now we'll interact with the counter contract. Add to your project the <code>Counter</code> class from the previous tutorial.</p>
-<p>Then, add the following react hooks:</p>
-<p>useAsyncInitialize - Will help us initialize dependencies</p>
+<h2 id="step6readthecountervalue">Step 6 - Read the Counter value</h2>
+<p>Now we'll interact with the counter contract. Add to your project the <code>Counter</code> class from the previous tutorial, and store it under <code>src/contracts/counter.ts</code>.</p>
+<p>useAsyncInitialize - Will help us initialize dependencies. Put it under <code>src/hooks/useAsyncInitialize.ts</code>.</p>
 <pre><code class="ts language-ts">import { useEffect, useState } from "react";
 
 function useAsyncInitialize&lt;T&gt;(func: () =&gt; Promise&lt;T&gt;, deps: any[] = []) {
@@ -483,7 +533,7 @@ function useAsyncInitialize&lt;T&gt;(func: () =&gt; Promise&lt;T&gt;, deps: any[
   return state;
 }
 </code></pre>
-<p>useTonClient - will help us interact with TON</p>
+<p>useTonClient - will help us interact with TON. Put it under <code>src/hooks/useTonClient.ts</code>.</p>
 <pre><code class="ts language-ts">import { getHttpEndpoint } from "@orbs-network/ton-access";
 import { TonClient } from "ton";
 
@@ -496,7 +546,65 @@ function useTonClient() {
   );
 }
 </code></pre>
-<p>useTonConnect - will expose whether we are connected with the wallet, and the Sender interface which is needed to send operations via our Counter class.</p>
+<p>Add the useCounterContract hook, which will get the counter's value. Put it under <code>src/hooks/useCounterContract.ts</code></p>
+<pre><code class="ts language-ts">import Counter from './contracts/counter.ts';
+
+function useCounterContract() {
+  const tc = useTonClient();
+  const [val, setVal] = useState&lt;null | number&gt;();
+
+  const ctrct = useAsyncInitialize(async () =&gt; {
+    if (!tc) return;
+    const contract = new Counter(
+      Address.parse(&lt;COUNTER_CONTRACT_ADDRESS&gt;)
+    );
+    return tc.open(contract) as OpenedContract&lt;Counter&gt;;
+  }, [tc]);
+
+  useEffect(() =&gt; {
+    async function getValue() {
+      if (!ctrct) return;
+      setVal(null);
+      const val = await ctrct.getCounter();
+      setVal(Number(val));
+    }
+    getValue();
+  }, [ctrct]);
+
+  return {
+    value: val,
+    address: ctrct?.address.toString(),
+  };
+}
+</code></pre>
+<p>Update your App.tsx:</p>
+<pre><code class="tsx language-tsx">function App() {
+  const { value, address } = useCounterContract();
+  const { connected } = useTonConnect();
+
+  return (
+    &lt;div className="App"&gt;
+      &lt;div className="Container"&gt;
+        &lt;TonConnectButton /&gt;
+
+        &lt;div className="Card"&gt;
+          &lt;b&gt;Counter Address&lt;/b&gt;
+          &lt;div className="Hint"&gt;{address?.slice(0, 30) + "..."}&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div className="Card"&gt;
+          &lt;b&gt;Value&lt;/b&gt;
+          &lt;div&gt;{value ?? "Loading..."}&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<p>Run your webapp with <code>npm run dev</code>, and you should see the counter's value.
+Don't worry about styling, we will handle this later.</p>
+<h2 id="step7incrementthecounter">Step 7 - Increment the counter</h2>
+<p>add the <code>useTonConnect</code> hook, which will expose whether we are connected with the wallet, and the Sender interface which is needed to send operations via our Counter class. Put it under <code>src/hooks/useTonConnect.ts</code>.</p>
 <pre><code class="ts language-ts">import { useTonConnectUI } from "@tonconnect/ui-react";
 import { Sender, SenderArguments } from "ton";
 
@@ -523,8 +631,10 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
   };
 }
 </code></pre>
-<p>Add the useCounterContract hook, which will poll the counter value every 3 seconds and expose a function to send an increment op, using TON Connect 2, to your wallet.</p>
-<pre><code class="ts language-ts">function useCounterContract() {
+<p>Update the <code>useCounterContract</code> hook, which will poll the counter value every 3 seconds and expose a function to send an increment op, using TON Connect 2, to your wallet. The hook's content after the update should be:</p>
+<pre><code class="ts language-ts">import Counter from './contracts/counter.ts';
+
+function useCounterContract() {
   const tc = useTonClient();
   const [val, setVal] = useState&lt;null | number&gt;();
   const { sender } = useTonConnect();
@@ -560,7 +670,7 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
   };
 }
 </code></pre>
-<p>Update your App.tsx</p>
+<p>Update your App.tsx, so it will look like this:</p>
 <pre><code class="tsx language-tsx">function App() {
   const { sendIncrement, value, address } = useCounterContract();
   const { connected } = useTonConnect();
@@ -592,7 +702,7 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
   );
 }
 </code></pre>
-<h2 id="step7styletheapp">Step 7 - Style the app</h2>
+<h2 id="step8styletheapp">Step 8 - Style the app</h2>
 <p>First, delete content of your index.css file so that it's completely empty.</p>
 <p>Then, replace the contents of your App.css file with:</p>
 <pre><code class="css language-css">:root {
@@ -670,13 +780,25 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
 
 }
 </code></pre>
-<h2 id="step8incrementthecounterfromyourapp">Step 8 - Increment the counter from your app</h2>
+<h2 id="step9incrementthecounterfromyourapp">Step 9 - Increment the counter from your app</h2>
 <p>You should now have a working webapp. Run it with <code>npm run dev</code>, then connect your wallet with Tonkeeper.</p>
 <p>After connecting, increment the counter and watch its value change.</p>
-<h2 id="step9publishtogithubpages">Step 9 - Publish to Github pages</h2>
+<h2 id="step10publishtogithubpages">Step 10 - Publish to Github pages</h2>
+<p>Now add the real TON Connect manifest file. This file tells the wallet details about your app when connecting with it.
+Add a <code>tonconnect-manifest.json</code> in your <code>public</code> folder with the following contents:</p>
+<p>Don't worry about the broken icon url for now, in your production app you will just change it to a publicly available URL of your logo.</p>
+<pre><code class="json language-json">{
+  "url": "",
+  "name": "My TWA",
+  "iconUrl": ""
+}
+</code></pre>
+<p>Update main.tsx to instruct the TON Connect provider to consume the manifest from your github pages url (if running in production).</p>
+<pre><code class="tsx language-tsx">const manifestUrl = "https://myuser.github.io/my-twa/tonconnect-manifest.json";
+</code></pre>
 <p>Follow the vite publish to <a href="https://vitejs.dev/guide/static-deploy.html#github-pages">github pages tutorial</a></p>
-<p>Take note of your github pages URL, such as <code>https://my-user.github.io/my-repo</code></p>
-<h2 id="step10addthetelegramwebappsdk">Step 10 - Add the Telegram Web App SDK</h2>
+<p>Take note of your github pages URL, such as <code>https://myuser.github.io/my-twa</code></p>
+<h2 id="step11addthetelegramwebappsdk">Step 11 - Add the Telegram Web App SDK</h2>
 <p>Add the Telegram Web App SDK, so we can get theming properties from Telegram.</p>
 <p>Run</p>
 <pre><code>npm install @twa-dev/sdk
@@ -684,7 +806,7 @@ function useTonConnect(): { sender: Sender; connected: boolean } {
 <p>And in your App.tsx, add</p>
 <pre><code>import "@twa-dev/sdk";
 </code></pre>
-<h2 id="step11connectthewebapptoyourbot">Step 11 - Connect the webapp to your bot</h2>
+<h2 id="step12connectthewebapptoyourbot">Step 12 - Connect the webapp to your bot</h2>
 <p>Create a Telegram bot.</p>
 <ul>
 <li><p>Go to <a href="https://t.me/botfather">botfather</a> and create a bot</p></li>
