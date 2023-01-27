@@ -66,13 +66,13 @@ npm i @tonconnect/ui-react
 Now add the TON Connect manifest. This file tells the wallet details about your app when connecting with it.
 Add a `tonconnect-manifest.json` in your `public` folder with the following contents:
 
-Don't worry about the broken icon for now, in your production app you will just change it to a publicly available URL of your logo.
+Don't worry about the broken icon url for now, in your production app you will just change it to a publicly available URL of your logo.
 
 ```json
 {
-  "url": "https://telegram.org",
+  "url": "",
   "name": "My TWA",
-  "iconUrl": "https://broken.png"
+  "iconUrl": ""
 }
 ```
 
